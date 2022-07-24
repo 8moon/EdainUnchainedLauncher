@@ -26,6 +26,12 @@ def open_directory(button):
     with open('launcher_options.ini', 'w') as configfile:
         config.write(configfile)
 
+# function for reading launcher_options.ini
+def read_launcher_options(section, subsection):
+    config = configparser.ConfigParser()
+    config.read('launcher_options.ini')
+    return config[section][subsection]
+
 #--------------------------#
 # main window with buttons #
 #--------------------------#
