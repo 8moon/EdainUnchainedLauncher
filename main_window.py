@@ -1,7 +1,8 @@
+from cProfile import label
 import configparser
 from distutils.command.config import config
 import tkinter
-from tkinter import filedialog
+from tkinter import RAISED, Label, StringVar, filedialog
 
 #------------------#
 # button functions #
@@ -36,6 +37,15 @@ main = tkinter.Tk()
 browse_path_1 = tkinter.Button(main, text = "browse_path_1")
 browse_path_1.config(command = lambda button = browse_path_1 : open_directory(button))
 browse_path_1.pack()
+
+# label for browse_path_1
+bfmeII_path = StringVar()
+label = Label(main, textvariable = bfmeII_path, relief = RAISED)
+# read current bfmeII path from launcher_options.ini
+config = configparser.ConfigParser()
+config.read('launcher_options.ini')
+bfmeII_path.set(config['GAMEPATH']['BFMEII'])
+label.pack()
 
 # button browse path for BFME II ROTWK
 browse_path_2 = tkinter.Button(main, text = "browse_path_2")
