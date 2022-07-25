@@ -16,8 +16,8 @@ def close_window():
 def open_directory(button):
     directory_path = filedialog.askdirectory()
     # write directory path into launcher_options.ini
-    config = configparser.ConfigParser()
-    config.read('launcher_options.ini')
+    #config = configparser.ConfigParser()
+    #config.read('launcher_options.ini')
     #config['GAMEPATH']['BFMEII'] = directory_path
     if button.cget("text") == "browse_path_1":
         config['GAMEPATH']['BFMEII'] = directory_path 
@@ -61,6 +61,9 @@ browse_path_2.pack()
 # button close window
 button_close = tkinter.Button(main, text = "Close", command = close_window)
 button_close.pack()
+
+# define main window size width x height
+main.geometry("500x200")
 
 # loop for main application window
 main.mainloop()
