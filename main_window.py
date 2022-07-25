@@ -73,6 +73,16 @@ config.read('launcher_options.ini')
 bfmeIIrotwk_path_label.set(config['GAMEPATH']['BFMEIIROTWK'])
 label_bfmeiirotwk.pack()
 
+# button install or update edain unchained submod
+# asset.dat goes into bfmeii folder location
+# _____________harad_sounds.big goes into bfmeiirotwk folder
+# ______________Edain_Unchained.big goes into bfmeiirotwk folder
+# ___________________harad_art.big goes into bfmeiirotwk folder
+install_edain_unchained_button_text = tkinter.StringVar()
+install_edain_unchained_button_text.set("Update") if 1 > 0 else install_edain_unchained_button_text.set("Install")
+install_edain_unchained = tkinter.Button(main, textvariable = install_edain_unchained_button_text)
+install_edain_unchained.pack()
+
 # button close window
 button_close = tkinter.Button(main, text = "Close", command = close_window)
 button_close.pack()
