@@ -4,9 +4,9 @@ from distutils.command.config import config
 import tkinter
 from tkinter import RAISED, Label, StringVar, filedialog
 
-#-----------#
-# variables #
-#-----------#
+#------------------#
+# global variables #
+#------------------#
 
 #------------------#
 # button functions #
@@ -48,7 +48,7 @@ browse_path_bfmeii = tkinter.Button(main, text = "browse_path_bfmeii")
 browse_path_bfmeii.config(command = lambda button = browse_path_bfmeii : open_directory(button))
 browse_path_bfmeii.pack()
 
-# label for gamepath text
+# label variables for gamepath text
 bfmeII_path_label = tkinter.StringVar()
 bfmeIIrotwk_path_label = tkinter.StringVar()
 
