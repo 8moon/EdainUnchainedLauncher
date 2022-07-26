@@ -43,21 +43,39 @@ def read_launcher_options(section, subsection):
     return config[section][subsection]
 
 # function for installing or updating edain unchained with source from download repository
+# asset.dat goes into bfmeii folder location
+# _____________harad_sounds.big goes into bfmeiirotwk folder
+# ______________Edain_Unchained.big goes into bfmeiirotwk folder
+# ___________________harad_art.big goes into bfmeiirotwk folder
+# englishpatch201.big goes into bfmeiirotwk/lang
 def install_mod():
-    # check if mod is installed in latest version --> TO DO
+    edain_unchained_installation_temp = read_launcher_options("GAMEPATH", "BFMEIIROTWK") + "/edain_unchained_installation_temp"
+    # check if mod is installed in latest version by comparing name of zipfiles --> TO DO
     # check if temp folder for installation/update exists and delete if needed --> TO DO
+    if os.path.isdir(edain_unchained_installation_temp): shutil.rmtree(edain_unchained_installation_temp)
     # create temp folder for installation/update --> TO DO
+    os.mkdir(edain_unchained_installation_temp)
     # download folder content from google drive into temp folder --> TO DO
     folder_url = r'https://drive.google.com/drive/folders/1iAZZdiWQxQFZpdez8MFu1TLl0y2lNB-s'
-    gdown.download_folder(url=folder_url, output=r'C:\Users\thoma\Desktop\Edain Unchained Test files', quiet=False, use_cookies=False)
-    # unzip files into temp directory --> TO DO
-    zipfile_path = r'C:\Users\thoma\Desktop\Edain Unchained Test files\file_01.zip'
-    target_zipfile_path = r'C:\Users\thoma\Desktop\Edain Unchained Test files\bfmeii folder'
-    with zipfile.ZipFile(zipfile_path, 'r') as zip_ref:
-        zip_ref.extractall(target_zipfile_path)
+    gdown.download_folder(url=folder_url, output=edain_unchained_installation_temp, quiet=False, use_cookies=False)
+    # unzip files into temp directory and delete zip files
+    for item in os.listdir(edain_unchained_installation_temp):
+        if item.endswith(".zip"):
+            file_name = edain_unchained_installation_temp + "/" + item
+            # print(file_name + "\n")
+            zip_ref = zipfile.ZipFile(file_name)
+            zip_ref.extractall(edain_unchained_installation_temp)
+            zip_ref.close()
+            os.remove(file_name)
     # move override unzipped files from temp folder into target directory --> TO DO
-    # cleanup temp directory afterwards --> TO DO
-    os.remove(zipfile_path) if os.path.exists(zipfile_path) else print("zipfile_path does not exist")
+    os.replace(edain_unchained_installation_temp + "/asset.dat", read_launcher_options("GAMEPATH", "BFMEII") + "/asset.dat")
+    os.replace(edain_unchained_installation_temp + "/englishpatch201.big", read_launcher_options("GAMEPATH", "BFMEIIROTWK") + "/lang/englishpatch201.big")
+    for item in os.listdir(edain_unchained_installation_temp):
+        extracted_file_name = edain_unchained_installation_temp + "/" + item
+        os.replace(extracted_file_name, read_launcher_options("GAMEPATH", "BFMEIIROTWK") + "/" + item)
+    # cleanup temp directory afterwards
+    if os.path.isdir(edain_unchained_installation_temp): shutil.rmtree(edain_unchained_installation_temp)
+    # update launcher_options.ini --> TO DO
 
 #--------------------------#
 # main window with buttons #
@@ -98,10 +116,7 @@ bfmeIIrotwk_path_label.set(config['GAMEPATH']['BFMEIIROTWK'])
 label_bfmeiirotwk.pack()
 
 # button install or update edain unchained submod
-# asset.dat goes into bfmeii folder location
-# _____________harad_sounds.big goes into bfmeiirotwk folder
-# ______________Edain_Unchained.big goes into bfmeiirotwk folder
-# ___________________harad_art.big goes into bfmeiirotwk folder
+
 install_edain_unchained_button_text = tkinter.StringVar()
 install_edain_unchained_button_text.set("Update") if 1 > 0 else install_edain_unchained_button_text.set("Install")
 install_edain_unchained = tkinter.Button(main, textvariable = install_edain_unchained_button_text, command = install_mod)
