@@ -76,7 +76,8 @@ def install_mod():
         os.replace(extracted_file_name, read_launcher_options("GAMEPATH", "BFMEIIROTWK") + "/" + item)
     # cleanup temp directory afterwards
     if os.path.isdir(edain_unchained_installation_temp): shutil.rmtree(edain_unchained_installation_temp)
-    # update launcher_options.ini --> TO DO
+    # update launcher_options.ini
+    write_ini(read_launcher_options("GAMEPATH", "BFMEIIROTWK") + "/launcher_options.ini", "MODINFO", "EDAIN_UNCHAINED_VERSION", check_newest_version())
 
 # function for checking the newest game version from google drive
 def check_newest_version():
@@ -104,10 +105,19 @@ def check_update():
     print("local version: " + local_version + "\n")
     print("Game is up to date\n") if local_version == check_newest_version() else print("Update available\n")
 
+# function for reading ini files
 def read_ini(filepath, section, subsection):
     config = configparser.ConfigParser()
     config.read(filepath)
     return config[section][subsection]
+
+# function for writing into ini files
+def write_ini(filepath, section, subsection, update_text):
+    config = configparser.ConfigParser()
+    config.read(filepath)
+    config[section][subsection] = update_text
+    with open(filepath, 'w') as configfile:
+        config.write(configfile)
     
 #--------------------------#
 # main window with buttons #
