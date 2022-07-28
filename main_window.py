@@ -78,26 +78,31 @@ def install_mod():
     if os.path.isdir(edain_unchained_installation_temp): shutil.rmtree(edain_unchained_installation_temp)
     # update launcher_options.ini --> TO DO
 
-# funciton for checking for updates
-def check_update():
+# function for checking the newest game version from google drive
+def check_newest_version():
     # store paths in variable
     edain_unchained_version_temp = read_launcher_options("GAMEPATH", "BFMEIIROTWK") + "/edain_unchained_version_temp"
-    bfmeii_path = read_launcher_options("GAMEPATH", "BFMEIIROTWK")
-    # check if temp folder for check update exists and delete if needed
+    # check if temp folder for check newest game version exists and delete if needed
     if os.path.isdir(edain_unchained_version_temp): shutil.rmtree(edain_unchained_version_temp)
     # create temp folder for check update
     os.mkdir(edain_unchained_version_temp)
     # download folder content from google drive into temp folder
     version_folder_url = r'https://drive.google.com/drive/folders/1gTAxNdmzfGaGiwtO_zw0rKFuJgL6cH44'
     gdown.download_folder(url=version_folder_url, output=edain_unchained_version_temp, quiet=False, use_cookies=False)
+    current_version = read_ini(edain_unchained_version_temp + "/eu_version_info.ini", "MODINFO", "EDAIN_UNCHAINED_VERSION")
+    print("current version: " + current_version + "\n")
+    # cleanup temp directory afterwards
+    if os.path.isdir(edain_unchained_version_temp): shutil.rmtree(edain_unchained_version_temp)
+    return current_version
+
+# funciton for checking for updates
+def check_update():
+    # store paths in variable
+    bfmeii_path = read_launcher_options("GAMEPATH", "BFMEIIROTWK")
     # compare local mod version with current mod version
     local_version = read_ini(bfmeii_path + "/launcher_options.ini", "MODINFO", "EDAIN_UNCHAINED_VERSION")
     print("local version: " + local_version + "\n")
-    current_version = read_ini(edain_unchained_version_temp + "/eu_version_info.ini", "MODINFO", "EDAIN_UNCHAINED_VERSION")
-    print("current version: " + current_version + "\n")
-    print("Game is up to date\n") if local_version == current_version else print("Update available\n")
-    # cleanup temp directory afterwards
-    if os.path.isdir(edain_unchained_version_temp): shutil.rmtree(edain_unchained_version_temp)
+    print("Game is up to date\n") if local_version == check_newest_version() else print("Update available\n")
 
 def read_ini(filepath, section, subsection):
     config = configparser.ConfigParser()
