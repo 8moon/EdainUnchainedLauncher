@@ -125,50 +125,42 @@ def write_ini(filepath, section, subsection, update_text):
 
 # main application window
 main = tkinter.Tk()
-main.geometry("500x200")
+main.geometry('500x200')
 
 # button browse path for BFME II
-browse_path_bfmeii = tkinter.Button(main, text = "browse_path_bfmeii")
+browse_path_bfmeii = tkinter.Button(main, text = 'browse_path_bfmeii')
 browse_path_bfmeii.config(command = lambda button = browse_path_bfmeii : open_directory(button))
 browse_path_bfmeii.pack()
 
-# label variables for gamepath text
-bfmeII_path_label = tkinter.StringVar()
-bfmeIIrotwk_path_label = tkinter.StringVar()
-
 # label for bfmeii current path
+bfmeII_path_label = tkinter.StringVar()
 label_bfmeii = Label(main, textvariable = bfmeII_path_label, relief = RAISED)
-# read current bfmeII path from launcher_options.ini
-config = configparser.ConfigParser()
-config.read('launcher_options.ini')
-bfmeII_path_label.set(config['GAMEPATH']['BFMEII'])
+bfmeII_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII'))
 label_bfmeii.pack()
 
 # button browse path for BFME II ROTWK
-browse_path_bfmeiirotwk = tkinter.Button(main, text = "browse_path_bfmeiirotwk")
+browse_path_bfmeiirotwk = tkinter.Button(main, text = 'browse_path_bfmeiirotwk')
 browse_path_bfmeiirotwk.config(command = lambda button = browse_path_bfmeiirotwk : open_directory(button))
 browse_path_bfmeiirotwk.pack()
 
 # label for bfmeiirotwk current path
+bfmeIIrotwk_path_label = tkinter.StringVar()
 label_bfmeiirotwk = Label(main, textvariable = bfmeIIrotwk_path_label, relief = RAISED)
-# read current bfmeiirotwk path from launcher_options.ini
-config = configparser.ConfigParser()
-config.read('launcher_options.ini')
-bfmeIIrotwk_path_label.set(config['GAMEPATH']['BFMEIIROTWK'])
+bfmeIIrotwk_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
 label_bfmeiirotwk.pack()
 
 # button check for updates
-check_for_updates = tkinter.Button(main, text = "Check for Updates", command = check_update)
+check_for_updates = tkinter.Button(main, text = 'Check for Updates', command = check_update)
 check_for_updates.pack()
 
-# button install or update edain unchained submod
+# button install edain unchained submod
 install_edain_unchained_button_text = tkinter.StringVar()
-install_edain_unchained_button_text.set("Update") if 1 > 0 else install_edain_unchained_button_text.set("Install")
+install_edain_unchained_button_text.set('Installation') # if 1 > 0 else install_edain_unchained_button_text.set('Update')
 install_edain_unchained = tkinter.Button(main, textvariable = install_edain_unchained_button_text, command = install_mod)
 install_edain_unchained.pack()
 
 # button close window
-button_close = tkinter.Button(main, text = "Close", command = close_window)
+button_close = tkinter.Button(main, text = 'Close', command = close_window)
 button_close.pack()
 
 # loop for main application window
