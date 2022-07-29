@@ -29,13 +29,11 @@ def open_directory(button):
     directory_path = filedialog.askdirectory()
     # write directory path into launcher_options.ini
     if button.cget("text") == "browse_path_bfmeii":
-        config['GAMEPATH']['BFMEII'] = directory_path 
+        write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII', directory_path)
         bfmeII_path_label.set(directory_path)
     elif button.cget("text") == "browse_path_bfmeiirotwk":
-        config['GAMEPATH']['BFMEIIROTWK'] = directory_path
+        write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', directory_path)
         bfmeIIrotwk_path_label.set(directory_path)
-    with open('launcher_options.ini', 'w') as configfile:
-        config.write(configfile)
 
 # function for reading launcher_options.ini
 def read_launcher_options(section, subsection):
