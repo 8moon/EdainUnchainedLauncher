@@ -42,13 +42,13 @@ def open_directory(button):
 # ______________Edain_Unchained.big goes into bfmeiirotwk folder
 # ___________________harad_art.big goes into bfmeiirotwk folder
 # englishpatch201.big goes into bfmeiirotwk/lang
-def install_mod(): # -> Add version check and abort update if game is installed
+def install_mod():
     edain_unchained_installation_temp = read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/edain_unchained_installation_temp'
-    # check if mod is installed in latest version by comparing name of zipfiles --> TO DO
+    # check if mod is installed in latest version 
     newest_version = check_newest_version()
     if read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION') == newest_version:
         print('newest version already installed')
-        return
+        return # is version check and abort neccessary or should it be force installation/update?
     # check if temp folder for installation/update exists and delete if needed
     if os.path.isdir(edain_unchained_installation_temp): shutil.rmtree(edain_unchained_installation_temp)
     # create temp folder for installation/update
