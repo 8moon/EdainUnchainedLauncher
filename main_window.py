@@ -1,16 +1,17 @@
 import configparser
-from multiprocessing import current_process
 import os
+import shutil
 import sys
 import tkinter
+import urllib.request
+import zipfile
 from cProfile import label
 from distutils.command.config import config
+from multiprocessing import current_process
 from tkinter import RAISED, Label, StringVar, filedialog
-import urllib.request
-import shutil
-import zipfile
-import requests
+
 import gdown
+import requests
 
 #------------------#
 # global variables #
@@ -35,12 +36,6 @@ def open_directory(button):
         write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', directory_path)
         bfmeIIrotwk_path_label.set(directory_path)
 
-# function for reading launcher_options.ini
-#def read_launcher_options(section, subsection):
-#    config = configparser.ConfigParser()
-#    config.read('launcher_options.ini')
-#    return config[section][subsection]
-
 # function for installing or updating edain unchained with source from download repository
 # asset.dat goes into bfmeii folder location
 # _____________harad_sounds.big goes into bfmeiirotwk folder
@@ -50,6 +45,10 @@ def open_directory(button):
 def install_mod(): # -> Add version check and abort update if game is installed
     edain_unchained_installation_temp = read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/edain_unchained_installation_temp'
     # check if mod is installed in latest version by comparing name of zipfiles --> TO DO
+    newest_version = check_newest_version()
+    if read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION') == newest_version:
+        print('newest version already installed')
+        return
     # check if temp folder for installation/update exists and delete if needed
     if os.path.isdir(edain_unchained_installation_temp): shutil.rmtree(edain_unchained_installation_temp)
     # create temp folder for installation/update
@@ -74,7 +73,7 @@ def install_mod(): # -> Add version check and abort update if game is installed
     # cleanup temp directory afterwards
     if os.path.isdir(edain_unchained_installation_temp): shutil.rmtree(edain_unchained_installation_temp)
     # update launcher_options.ini
-    write_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION', check_newest_version())
+    write_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION', newest_version)
 
 # function for checking the newest game version from google drive
 def check_newest_version():
@@ -87,11 +86,11 @@ def check_newest_version():
     # download folder content from google drive into temp folder
     version_folder_url = read_ini('launcher_options.ini', 'URL', 'EDAIN_UNCHAINED_VERSION_INFO_FOLDER')
     gdown.download_folder(url=version_folder_url, output=edain_unchained_version_temp, quiet=False, use_cookies=False)
-    current_version = read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION')
-    print("current version: " + current_version + "\n")
+    newest_version = read_ini(edain_unchained_version_temp + '/eu_version_info.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION')
+    # print("newest version: " + newest_version + "\n")
     # cleanup temp directory afterwards
     if os.path.isdir(edain_unchained_version_temp): shutil.rmtree(edain_unchained_version_temp)
-    return current_version
+    return newest_version
 
 # funciton for checking for updates
 def check_update():
