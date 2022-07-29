@@ -28,18 +28,18 @@ def close_window():
 def open_directory(button):
     directory_path = filedialog.askdirectory()
     # write directory path into launcher_options.ini
-    if button.cget("text") == "browse_path_bfmeii":
+    if button.cget('text') == 'browse_path_bfmeii':
         write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII', directory_path)
         bfmeII_path_label.set(directory_path)
-    elif button.cget("text") == "browse_path_bfmeiirotwk":
+    elif button.cget('text') == 'browse_path_bfmeiirotwk':
         write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', directory_path)
         bfmeIIrotwk_path_label.set(directory_path)
 
 # function for reading launcher_options.ini
-def read_launcher_options(section, subsection):
-    config = configparser.ConfigParser()
-    config.read('launcher_options.ini')
-    return config[section][subsection]
+#def read_launcher_options(section, subsection):
+#    config = configparser.ConfigParser()
+#    config.read('launcher_options.ini')
+#    return config[section][subsection]
 
 # function for installing or updating edain unchained with source from download repository
 # asset.dat goes into bfmeii folder location
@@ -80,15 +80,15 @@ def install_mod():
 # function for checking the newest game version from google drive
 def check_newest_version():
     # store paths in variable
-    edain_unchained_version_temp = read_launcher_options("GAMEPATH", "BFMEIIROTWK") + "/edain_unchained_version_temp"
+    edain_unchained_version_temp = read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/edain_unchained_version_temp'
     # check if temp folder for check newest game version exists and delete if needed
     if os.path.isdir(edain_unchained_version_temp): shutil.rmtree(edain_unchained_version_temp)
     # create temp folder for check update
     os.mkdir(edain_unchained_version_temp)
     # download folder content from google drive into temp folder
-    version_folder_url = r'https://drive.google.com/drive/folders/1gTAxNdmzfGaGiwtO_zw0rKFuJgL6cH44'
+    version_folder_url = read_ini('launcher_options.ini', 'URL', 'EDAIN_UNCHAINED_VERSION_INFO_FOLDER')
     gdown.download_folder(url=version_folder_url, output=edain_unchained_version_temp, quiet=False, use_cookies=False)
-    current_version = read_ini(edain_unchained_version_temp + "/eu_version_info.ini", "MODINFO", "EDAIN_UNCHAINED_VERSION")
+    current_version = read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION')
     print("current version: " + current_version + "\n")
     # cleanup temp directory afterwards
     if os.path.isdir(edain_unchained_version_temp): shutil.rmtree(edain_unchained_version_temp)
@@ -96,12 +96,12 @@ def check_newest_version():
 
 # funciton for checking for updates
 def check_update():
-    # store paths in variable
-    bfmeii_path = read_launcher_options("GAMEPATH", "BFMEIIROTWK")
     # compare local mod version with current mod version
-    local_version = read_ini(bfmeii_path + "/launcher_options.ini", "MODINFO", "EDAIN_UNCHAINED_VERSION")
-    print("local version: " + local_version + "\n")
-    print("Game is up to date\n") if local_version == check_newest_version() else print("Update available\n")
+    local_version = read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION')
+    print('local version: ' + local_version + '\n')
+    newest_version = check_newest_version()
+    print('newest version: ' + newest_version + '\n')
+    print('Game is up to date\n') if local_version == newest_version else print('Update available\n')
 
 # function for reading ini files
 def read_ini(filepath, section, subsection):
