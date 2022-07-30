@@ -1,17 +1,12 @@
 import configparser
 import os
 import shutil
-import sys
 import tkinter
-import urllib.request
 import zipfile
-from cProfile import label
-from distutils.command.config import config
-from multiprocessing import current_process
-from tkinter import RAISED, Label, StringVar, filedialog
+from tkinter import RAISED, Label, filedialog
 
 import gdown
-import requests
+
 
 #------------------#
 # global variables #
