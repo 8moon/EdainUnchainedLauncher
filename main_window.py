@@ -3,11 +3,10 @@ import os
 import shutil
 import tkinter
 import zipfile
-import customtkinter
-import gdown
-from tkinter import *
 from tkinter import filedialog
 
+import customtkinter
+import gdown
 
 # ------------------#
 # global variables #
@@ -19,6 +18,9 @@ from tkinter import filedialog
 
 
 # function for button close window
+from requests import options
+
+
 def close_window():
     main.destroy()
 
@@ -42,42 +44,53 @@ def open_directory(button):
 # ___________________harad_art.big goes into bfmeiirotwk folder
 # englishpatch201.big goes into bfmeiirotwk/lang
 def install_mod():
-    edain_unchained_installation_temp = read_ini('launcher_options.ini', 'GAMEPATH',
-                                                 'BFMEIIROTWK') + '/edain_unchained_installation_temp'
-    # check if mod is installed in latest version
-    newest_version = check_newest_version()
-    if read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION') == newest_version:
-        print('newest version already installed')
-        return  # is version check and abort necessary or should it be force installation/update?
-    # check if temp folder for installation/update exists and delete if needed
-    if os.path.isdir(edain_unchained_installation_temp):
-        shutil.rmtree(edain_unchained_installation_temp)
-    # create temp folder for installation/update
-    os.mkdir(edain_unchained_installation_temp)
-    # download folder content from google drive into temp folder
-    folder_url = read_ini('launcher_options.ini', 'URL', 'EDAIN_UNCHAINED_DOWNLOAD_FOLDER')
-    gdown.download_folder(url=folder_url, output=edain_unchained_installation_temp, quiet=False, use_cookies=False)
-    # unzip files into temp directory and delete zip files
-    for item in os.listdir(edain_unchained_installation_temp):
-        if item.endswith('.zip'):
-            file_name = edain_unchained_installation_temp + '/' + item
-            zip_ref = zipfile.ZipFile(file_name)
-            zip_ref.extractall(edain_unchained_installation_temp)
-            zip_ref.close()
-            os.remove(file_name)
-    # move override unzipped files from temp folder into target directory
-    os.replace(edain_unchained_installation_temp + '/asset.dat',
-               read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII') + '/asset.dat')
-    os.replace(edain_unchained_installation_temp + '/englishpatch201.big',
-               read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/lang/englishpatch201.big')
-    for item in os.listdir(edain_unchained_installation_temp):
-        extracted_file_name = edain_unchained_installation_temp + '/' + item
-        os.replace(extracted_file_name, read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + item)
-    # cleanup temp directory afterwards
-    if os.path.isdir(edain_unchained_installation_temp):
-        shutil.rmtree(edain_unchained_installation_temp)
-    # update launcher_options.ini
-    write_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION', newest_version)
+    try:
+        approve_installation = tkinter.messagebox.askyesno(title='Repair Submod',
+                                                           message='Do you want to download and install all submod '
+                                                                   'files again?')
+        if approve_installation:
+            edain_unchained_installation_temp = read_ini('launcher_options.ini', 'GAMEPATH',
+                                                         'BFMEIIROTWK') + '/edain_unchained_installation_temp'
+            # check if mod is installed in latest version
+            newest_version = check_newest_version()
+            if read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION') == newest_version:
+                print('newest version already installed')
+                label_feedback.configure(text='Newest version already installed!')
+                return  # is version check and abort necessary or should it be force installation/update?
+            # check if temp folder for installation/update exists and delete if needed
+            if os.path.isdir(edain_unchained_installation_temp):
+                shutil.rmtree(edain_unchained_installation_temp)
+            # create temp folder for installation/update
+            os.mkdir(edain_unchained_installation_temp)
+            # download folder content from google drive into temp folder
+            folder_url = read_ini('launcher_options.ini', 'URL', 'EDAIN_UNCHAINED_DOWNLOAD_FOLDER')
+            gdown.download_folder(url=folder_url, output=edain_unchained_installation_temp, quiet=False, use_cookies=False)
+            # unzip files into temp directory and delete zip files
+            for item in os.listdir(edain_unchained_installation_temp):
+                if item.endswith('.zip'):
+                    file_name = edain_unchained_installation_temp + '/' + item
+                    zip_ref = zipfile.ZipFile(file_name)
+                    zip_ref.extractall(edain_unchained_installation_temp)
+                    zip_ref.close()
+                    os.remove(file_name)
+            # move override unzipped files from temp folder into target directory
+            os.replace(edain_unchained_installation_temp + '/asset.dat',
+                       read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII') + '/asset.dat')
+            os.replace(edain_unchained_installation_temp + '/englishpatch201.big',
+                       read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/lang/englishpatch201.big')
+            for item in os.listdir(edain_unchained_installation_temp):
+                extracted_file_name = edain_unchained_installation_temp + '/' + item
+                os.replace(extracted_file_name, read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + item)
+            # cleanup temp directory afterwards
+            if os.path.isdir(edain_unchained_installation_temp):
+                shutil.rmtree(edain_unchained_installation_temp)
+            # update launcher_options.ini
+            write_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION', newest_version)
+            eu_version_label.configure(
+                text='Version ' + read_ini('launcher_options.ini', 'MODINFO', 'edain_unchained_version'))
+            label_feedback.configure(text='Latest Edain Unchained Version is installed!')
+    except OSError:
+        label_feedback.configure(text='Something went wrong!')
 
 
 # function for checking the newest game version from google drive
@@ -97,6 +110,7 @@ def check_newest_version():
                               'EDAIN_UNCHAINED_VERSION')
     # print("newest version: " + newest_version + "\n")
     # cleanup temp directory afterwards
+    eu_version_label.configure(text='Version ' + read_ini('launcher_options.ini', 'MODINFO', 'edain_unchained_version'))
     if os.path.isdir(edain_unchained_version_temp):
         shutil.rmtree(edain_unchained_version_temp)
     return newest_version
@@ -104,57 +118,83 @@ def check_newest_version():
 
 # funciton for checking for updates
 def check_update():
-    # compare local mod version with current mod version
-    local_version = read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION')
-    print('local version: ' + local_version + '\n')
-    newest_version = check_newest_version()
-    print('newest version: ' + newest_version + '\n')
-    print('Game is up to date\n') if local_version == newest_version else print('Update available\n')
+    try:
+        # compare local mod version with current mod version
+        local_version = read_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION')
+        print('local version: ' + local_version + '\n')
+        newest_version = check_newest_version()
+        print('newest version: ' + newest_version + '\n')
+        label_feedback.configure(
+            text='Game is up to date!') if local_version == newest_version else label_feedback.configure(
+            text='Update is available!')
+    except OSError:
+        label_feedback.configure(text='Cannot check for updates!')
 
 
 # function for reading ini files
 def read_ini(filepath, section, subsection):
-    config = configparser.ConfigParser()
-    config.read(filepath)
-    return config[section][subsection]
+    try:
+        config = configparser.ConfigParser()
+        config.read(filepath)
+        return config[section][subsection]
+    except FileNotFoundError:
+        label_feedback.configure(text='Can not read from launcher_options.ini!')
 
 
 # function for writing into ini files
 def write_ini(filepath, section, subsection, update_text):
-    config = configparser.ConfigParser()
-    config.read(filepath)
-    config[section][subsection] = update_text
-    with open(filepath, 'w') as configfile:
-        config.write(configfile)
+    try:
+        config = configparser.ConfigParser()
+        config.read(filepath)
+        config[section][subsection] = update_text
+        with open(filepath, 'w') as configfile:
+            config.write(configfile)
+    except FileNotFoundError:
+        label_feedback.configure(text='Can not write in launcher_options.ini!')
 
 
 # function for starting the game
 def start_game():
-    os.chdir(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
-    os.system('lotrbfme2ep1.exe')
-    close_window()
+    try:
+        label_feedback.configure(text='DESTROY YOUR ENEMY!')
+        os.chdir(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
+        os.system('lotrbfme2ep1.exe')
+        close_window()
+    except OSError:
+        label_feedback.configure(text='No lotrbfme2ep1.exe found!')
 
 
 # function for deactivating the submod
 def deactivate_submod():
-    config = configparser.ConfigParser()
-    config.read('launcher_options.ini')
+    try:
+        config = configparser.ConfigParser()
+        config.read('launcher_options.ini')
 
-    for (file, filename) in config.items('FILENAME'):
-        os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename,
-                  read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak')
+        for (file, filename) in config.items('FILENAME'):
+            os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename,
+                      read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak')
+
+        label_feedback.configure(text='Submod is deactivated!')
+    except OSError:
+        label_feedback.configure(text='Submod is already deactivated!')
 
 
 # function for activating the submod
 def activate_submod():
-    config = configparser.ConfigParser()
-    config.read('launcher_options.ini')
+    try:
+        config = configparser.ConfigParser()
+        config.read('launcher_options.ini')
 
-    for (file, filename) in config.items('FILENAME'):
-        os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak',
-                  read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename)
+        for (file, filename) in config.items('FILENAME'):
+            os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak',
+                      read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename)
+
+        label_feedback.configure(text='Submod is activated!')
+    except OSError:
+        label_feedback.configure(text='Submod is already activated!')
 
 
+# function for changing the backround color
 def change_appearance_mode(new_appearance_mode):
     customtkinter.set_appearance_mode(new_appearance_mode)
 
@@ -186,11 +226,16 @@ frame_right.grid(row=0, column=1, sticky='nswe', padx=20, pady=20)
 frame_left.grid_rowconfigure(0, minsize=10)  # empty row with minsize as spacing (top)
 frame_left.grid_rowconfigure(7, weight=1)  # empty row as spacing (Appearance Mode is at bottom)
 frame_left.grid_rowconfigure(11, minsize=10)  # empty row with minsize as spacing (bottom)
-frame_left.grid_rowconfigure(2, minsize=20)  # empty row with minsize as spacing (after eu_label)
+frame_left.grid_rowconfigure(3, minsize=20)  # empty row with minsize as spacing (after eu_label)
 
 # edain unchained label
 eu_label = customtkinter.CTkLabel(frame_left, text='Edain Unchained', text_font=("Ringbearer", 16))
 eu_label.grid(row=1, column=0, pady=10, padx=10)
+
+# edain unchained version label
+eu_version_label = customtkinter.CTkLabel(frame_left, text_font=("Ringbearer", 12))
+eu_version_label.configure(text='Version ' + read_ini('launcher_options.ini', 'MODINFO', 'edain_unchained_version'))
+eu_version_label.grid(row=2, column=0, pady=10, padx=10)
 
 # button start game
 button_start_game = customtkinter.CTkButton(frame_left, text='Start game', command=start_game)
@@ -230,7 +275,7 @@ frame_gamepath.grid_columnconfigure(0, weight=1)
 frame_gamepath.grid_columnconfigure(1, weight=1)
 
 frame_update = customtkinter.CTkFrame(master=frame_right)
-frame_update.grid(row=3, column=0, columnspan=1, rowspan=2, pady=20, padx=20, sticky="nsew")
+frame_update.grid(row=3, column=0, columnspan=2, rowspan=2, pady=20, padx=20, sticky="nsew")
 frame_update.grid_rowconfigure(0, weight=1)
 frame_update.grid_rowconfigure(1, weight=1)
 frame_update.grid_columnconfigure(0, weight=1)
@@ -250,7 +295,7 @@ browse_path_bfmeii.grid(row=0, column=0, pady=10, padx=20)
 bfmeII_path_label = tkinter.StringVar()
 label_bfmeii = customtkinter.CTkLabel(frame_gamepath, textvariable=bfmeII_path_label, height=1, )
 bfmeII_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII'))
-label_bfmeii.grid(row=0, column=1, pady=10, padx=20)
+label_bfmeii.grid(row=0, column=1, pady=10, padx=20, )
 
 # button browse path for BFME II ROTWK
 browse_path_bfmeiirotwk = tkinter.Button(frame_gamepath, text='browse_path_bfmeiirotwk', width=25, height=1, )
@@ -263,21 +308,30 @@ label_bfmeiirotwk = customtkinter.CTkLabel(frame_gamepath, textvariable=bfmeIIro
 bfmeIIrotwk_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
 label_bfmeiirotwk.grid(row=1, column=1, pady=10, padx=20)
 
-# button check for updates
-check_for_updates = tkinter.Button(frame_update, text='Check for Updates', width=20, height=1, command=check_update)
-check_for_updates.grid(row=0, column=0, pady=10, padx=20)
-
 # button install edain unchained submod
 install_edain_unchained_button_text = tkinter.StringVar()
 install_edain_unchained_button_text.set(
-    'Installation')  # if 1 > 0 else install_edain_unchained_button_text.set('Update')
+    'Repair')  # if 1 > 0 else install_edain_unchained_button_text.set('Update')
 install_edain_unchained = tkinter.Button(frame_update, textvariable=install_edain_unchained_button_text, width=20,
                                          height=1,
                                          command=install_mod)
-install_edain_unchained.grid(row=1, column=0, pady=10, padx=20)
+install_edain_unchained.grid(row=0, column=0, pady=10, padx=20)
+
+# label install
+install_edain_unchained_label = customtkinter.CTkLabel(frame_update, text='Reinstall the mod')
+install_edain_unchained_label.grid(row=0, column=1, pady=10, padx=20)
+
+# button check for updates
+check_for_updates = tkinter.Button(frame_update, text='Check for Updates', width=20, height=1, command=check_update)
+check_for_updates.grid(row=1, column=0, pady=10, padx=20)
+
+# label update
+label_update = customtkinter.CTkLabel(frame_update, text='Update to the latest version')
+label_update.grid(row=1, column=1, pady=10, padx=20)
 
 # feedback label
-label_feedback = customtkinter.CTkLabel(frame_feedback, text='Do something!', width=50, height=2)
+label_feedback = customtkinter.CTkLabel(frame_feedback, width=50, height=2, text_font='BOLD')
+label_feedback.config(text='Do something!')
 label_feedback.grid(row=0, column=0, pady=0, padx=15, sticky="ew")
 
 # feedback progressbar
