@@ -3,7 +3,7 @@ import os
 import shutil
 import tkinter
 import zipfile
-from tkinter import RAISED, Label, filedialog
+from tkinter import RAISED, Label, PhotoImage, filedialog, Canvas
 
 import gdown
 
@@ -116,7 +116,11 @@ def write_ini(filepath, section, subsection, update_text):
 
 # main application window
 main = tkinter.Tk()
-main.geometry('500x200')
+main.title('Edain Unchained Launcher')
+main.geometry('590x250')
+background_image = PhotoImage(file='KRANK.png')
+background_label = Label(main, image=background_image)
+background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
 # button browse path for BFME II
 browse_path_bfmeii = tkinter.Button(main, text = 'browse_path_bfmeii')
