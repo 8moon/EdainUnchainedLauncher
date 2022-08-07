@@ -24,7 +24,7 @@ fileDownloading = ''
 # button functions #
 # ------------------#
 
-
+# function for button close window
 def close_window():
     main.destroy()
 
