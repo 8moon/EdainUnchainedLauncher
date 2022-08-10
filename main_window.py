@@ -1,4 +1,6 @@
 import configparser
+import imp
+from mimetypes import init
 import os
 import os.path
 import shutil
@@ -7,11 +9,11 @@ import time
 import tkinter
 import tkinter.ttk
 import zipfile
-import webbrowser
-from tkinter import filedialog, messagebox
-
+from tkinter import Frame, filedialog, messagebox
 import customtkinter
 import gdown
+import subprocess
+import sys
 
 # ------------------#
 # global variables #
@@ -482,6 +484,39 @@ def check_game_paths():
 def change_appearance_mode(new_appearance_mode):
     customtkinter.set_appearance_mode(new_appearance_mode)
 
+# functions for redirecting terminal output to tkinter
+def run():
+    threading.Thread(target=test).start()
+
+def test():
+    print("Thread: start")
+
+    #p = subprocess.Popen("ping -c 4 stackoverflow.com".split(), stdout=subprocess.PIPE, bufsize=1, text=True)
+    p = subprocess.Popen("ping stackoverflow.com".split(), stdout=subprocess.PIPE, bufsize=1, text=True)
+    while p.poll() is None:
+        msg = p.stdout.readline().strip() # read a line from the process output
+        if msg:
+            print(msg)
+
+    print("Thread: end")
+
+# --------#
+# classes #
+# --------#
+
+# class for redirecting terminal output to tkinter
+class Redirect():
+    def __init__(self, widget, autoscroll=True):
+        self.widget = widget
+        self.autoscroll = autoscroll
+
+    def write(self, text):
+        self.widget.insert('end', text)
+        if self.autoscroll:
+            self.widget.see("end")  # autoscroll
+        
+    #def flush(self):
+    #    pass
 
 # function for switching the language (english or german)
 def switch_language(language):
@@ -560,6 +595,11 @@ button_deactivate_submod.grid(row=3, column=0, pady=10, padx=20)
 # button activate submod
 button_activate_submod = customtkinter.CTkButton(frame_left, text='activate submod', command=activate_submod)
 button_activate_submod.grid(row=4, column=0, pady=10, padx=20)
+
+
+# button to test terminal output
+button_terminal_test = customtkinter.CTkButton(frame_left, text='test terminal', command=run)
+button_terminal_test.grid(row=5, column=0, pady=10, padx=20)
 
 # label for switch language
 label_switch_language = customtkinter.CTkLabel(frame_left, text='Game language:')
@@ -656,4 +696,27 @@ label_feedback.grid(row=0, column=0, pady=0, padx=15, sticky='ew')
 progressbar = tkinter.ttk.Progressbar(frame_feedback, orient='horizontal', mode='determinate')
 progressbar.grid(row=1, column=0, sticky="ew", padx=15, pady=0)
 
+
+# terminal output as progressbar
+frame = tkinter.Frame(main)
+#frame.pack(expand=True, fill='both')
+frame.grid(row=2, column=0, sticky='ew', padx=15, pady=0)
+
+text = tkinter.Text(frame)
+text.pack(side='left', fill='both', expand=True)
+
+scrollbar = tkinter.Scrollbar(frame)
+scrollbar.pack(side='right', fill='y')
+
+text['yscrollcommand'] = scrollbar.set
+scrollbar['command'] = text.yview
+
+old_stdout = sys.stdout    
+sys.stdout = Redirect(text)
+
+# loop for main application window
+
 main.mainloop()
+
+# after closing window
+sys.stdout = old_stdout
