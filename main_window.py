@@ -1,19 +1,18 @@
 import configparser
-import imp
-from mimetypes import init
 import os
 import os.path
 import shutil
+import subprocess
+import sys
 import threading
 import time
 import tkinter
 import tkinter.ttk
 import zipfile
-from tkinter import Frame, filedialog, messagebox
+from tkinter import filedialog, messagebox
+
 import customtkinter
 import gdown
-import subprocess
-import sys
 
 # ------------------#
 # global variables #
@@ -42,6 +41,7 @@ def open_directory(button):
     elif button.cget('text') == 'browse_path_bfmeiirotwk':
         write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', directory_path)
         bfmeIIrotwk_path_label.set(directory_path)
+
 
 # function for installing edain unchained with source from download repository
 # asset.dat goes into bfmeii folder location
@@ -186,19 +186,26 @@ def install_files():
     for (file, filename) in config.items('FILEVERSION'):
         newest_file_version = check_newest_version('FILEVERSION', file)
         local_file_version = read_ini('launcher_options.ini', 'FILEVERSION', file)
+        print('Version ' + file + ' -> Installed: ' + local_file_version + ' -> Newest: ' + newest_file_version)
 
-        temp_number = 0
+        file_not_exists = True
         if file == 'eu_asset':
             if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII') + '/asset.dat'):
-                temp_number = 1
+                file_not_exists = False
+            else:
+                print('File does not exist: asset.dat')
         elif file == 'eu_lang':
             if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/lang/englishpatch201.big'):
-                temp_number = 1
+                file_not_exists = False
+            else:
+                print('File does not exist: englishpatch201.big')
         else:
-            if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini('launcher_options.ini', 'FILENAME', file)):
-                temp_number = 1
+            if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini('launcher_options.ini', 'FILENAME', file)) or os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini('launcher_options.ini', 'FILENAME', file) + '.bak'):
+                file_not_exists = False
+            else:
+                print('File does not exist: ' + read_ini('launcher_options.ini', 'FILENAME', file))
 
-        if local_file_version != newest_file_version or temp_number == 0:
+        if local_file_version != newest_file_version or file_not_exists:
             file_url = check_newest_version('FILEURL', file)
             edain_unchained_installation_temp = read_ini('launcher_options.ini', 'GAMEPATH',
                                                          'BFMEIIROTWK') + '/edain_unchained_installation_temp/' + file + '.zip'
@@ -244,7 +251,6 @@ def install_files():
     # update launcher_options.ini
     write_ini('launcher_options.ini', 'MODINFO', 'EDAIN_UNCHAINED_VERSION', newest_version)
     for (file, filename) in config.items('FILEVERSION'):
-        print('Current Version: ' + file + ' - ' + filename)
         write_ini('launcher_options.ini', 'FILEVERSION', file, check_newest_version('FILEVERSION', file))
     # update version label in launcher
     eu_version_label.configure(
@@ -260,18 +266,21 @@ def install_files():
 # function for starting threats for installing / updating
 def start_install_thread(button):
     if check_game_paths():
-        # reinstall everything
-        if button.cget('text') == 'Repair':
-            approve_installation_repair = tkinter.messagebox.askyesno(title='Repair Submod',
-                                                                message='Do you want to download and install all submod files again?')
-            if approve_installation_repair:
-                threading.Thread(target=install_all).start()
-        # update only new files
-        if button.cget('text') == 'Update':
-            approve_installation_update = tkinter.messagebox.askyesno(title='Update Submod',
-                                                                message='Do you want to update the submod?')
-            if approve_installation_update:
-                threading.Thread(target=install_files).start()
+        if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
+            # reinstall everything
+            if button.cget('text') == 'Repair':
+                approve_installation_repair = tkinter.messagebox.askyesno(title='Repair Submod',
+                                                                    message='Do you want to download and install all submod files again?')
+                if approve_installation_repair:
+                    threading.Thread(target=install_all).start()
+            # update only new files
+            if button.cget('text') == 'Update':
+                approve_installation_update = tkinter.messagebox.askyesno(title='Update Submod',
+                                                                    message='Do you want to update the submod?')
+                if approve_installation_update:
+                    threading.Thread(target=install_files).start()
+        else:
+            tkinter.messagebox.showerror(title='Submod deactivated', message='Activate submod before updating')
 
 
 # function from install_files for showing the download progress
@@ -323,7 +332,6 @@ def check_newest_version(section, subsection):
         # print("newest version: " + newest_version + "\n")
         eu_version_label.configure(
             text='Version ' + read_ini('launcher_options.ini', 'MODINFO', 'edain_unchained_version'))
-        print('Newest Version: ' + subsection + ' - ' + newest_version)
         return newest_version
     except OSError:
         label_feedback.configure(text='Server cannot be reached!')
@@ -390,9 +398,11 @@ def deactivate_submod():
                     if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak') is False:
                         os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename,
                                   read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak')
+                        print('File ' + filename + ' renamed: ' + filename + '.bak')
 
             write_ini('launcher_options.ini', 'SETTINGS', 'activated', 'False')
             label_feedback.configure(text='Submod is deactivated!')
+            check_submod_activated()
         except OSError:
             file_number = 1
             file_exists = 1
@@ -429,10 +439,12 @@ def activate_submod():
                         read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename) is False:
                     os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak',
                               read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename)
+                    print('File ' + filename + '.bak renamed: ' + filename)
 
             write_ini('launcher_options.ini', 'SETTINGS', 'activated', 'True')
             check_language()
             label_feedback.configure(text='Submod is activated!')
+            check_submod_activated()
         except OSError:
             file_number = 1
             file_exists = 1
@@ -484,14 +496,16 @@ def check_game_paths():
 def change_appearance_mode(new_appearance_mode):
     customtkinter.set_appearance_mode(new_appearance_mode)
 
+
 # functions for redirecting terminal output to tkinter
 def run():
     threading.Thread(target=test).start()
 
+
 def test():
     print("Thread: start")
 
-    #p = subprocess.Popen("ping -c 4 stackoverflow.com".split(), stdout=subprocess.PIPE, bufsize=1, text=True)
+    # p = subprocess.Popen("ping -c 4 stackoverflow.com".split(), stdout=subprocess.PIPE, bufsize=1, text=True)
     p = subprocess.Popen("ping stackoverflow.com".split(), stdout=subprocess.PIPE, bufsize=1, text=True)
     while p.poll() is None:
         msg = p.stdout.readline().strip() # read a line from the process output
@@ -504,6 +518,7 @@ def test():
 # classes #
 # --------#
 
+
 # class for redirecting terminal output to tkinter
 class Redirect():
     def __init__(self, widget, autoscroll=True):
@@ -514,9 +529,10 @@ class Redirect():
         self.widget.insert('end', text)
         if self.autoscroll:
             self.widget.see("end")  # autoscroll
-        
+
     #def flush(self):
     #    pass
+
 
 # function for switching the language (english or german)
 def switch_language(language):
@@ -537,23 +553,42 @@ def check_language():
         if current_language == 'German':
             if os.path.exists(path_english_file):
                 os.rename(path_english_file, path_english_file + '.bak')
+                print('File ' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_eng') + ' renamed: ' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_eng') + '.bak')
             if os.path.exists(path_german_file + '.bak'):
                 os.rename(path_german_file + '.bak', path_german_file)
+                print('File ' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_ger') + '.bak renamed: ' + read_ini(
+                    'launcher_options.ini', 'FILENAME', 'eu_sounds_ger'))
         elif current_language == 'English':
             if os.path.exists(path_german_file):
                 os.rename(path_german_file, path_german_file + '.bak')
+                print('File ' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_ger') + ' renamed: ' + read_ini(
+                    'launcher_options.ini', 'FILENAME', 'eu_sounds_ger') + '.bak')
             if os.path.exists(path_english_file + '.bak'):
                 os.rename(path_english_file + '.bak', path_english_file)
+                print('File ' + read_ini('launcher_options.ini', 'FILENAME',
+                                         'eu_sounds_eng') + '.bak renamed: ' + read_ini(
+                    'launcher_options.ini', 'FILENAME', 'eu_sounds_eng'))
 
 
+# check if submod is activated and change label
+def check_submod_activated():
+    if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
+        eu_label.configure(text='Edain Unchained')
+        eu_version_label.configure(text='Version: ' + read_ini('launcher_options.ini', 'MODINFO', 'edain_unchained_version'))
+    else:
+        eu_label.configure(text='Edain Mod')
+        eu_version_label.configure(text='')
 # --------------------------#
 # main window with buttons #
 # --------------------------#
 
 # main application window
 main = customtkinter.CTk()
-main.geometry('700x420')
+main.geometry('800x520')
 main.title('Edain Unchained Launcher')
+main.iconbitmap('launcherIcon.ico')
+#photo = tkinter.PhotoImage(file='launcherIcon.png')
+#main.iconphoto(False, photo)
 
 # ============ create two frames ============
 
@@ -571,9 +606,9 @@ frame_middle.grid(row=0, column=1, sticky='nswe', padx=20, pady=20)
 
 # configure grid layout (1x11)
 frame_left.grid_rowconfigure(0, minsize=10)  # empty row with minsize as spacing (top)
-frame_left.grid_rowconfigure(7, weight=1)  # empty row as spacing (Appearance Mode is at bottom)
-frame_left.grid_rowconfigure(11, minsize=10)  # empty row with minsize as spacing (bottom)
 frame_left.grid_rowconfigure(3, minsize=20)  # empty row with minsize as spacing (after eu_label)
+frame_left.grid_rowconfigure(6, weight=1)  # empty row as spacing (Appearance Mode is at bottom)
+frame_left.grid_rowconfigure(11, minsize=10)  # empty row with minsize as spacing (bottom)
 
 # edain unchained label
 eu_label = customtkinter.CTkLabel(frame_left, text='Edain Unchained', text_font=("Ringbearer", 16))
@@ -583,6 +618,7 @@ eu_label.grid(row=1, column=0, pady=10, padx=10)
 eu_version_label = customtkinter.CTkLabel(frame_left, text_font=("Ringbearer", 12))
 eu_version_label.configure(text='Version ' + read_ini('launcher_options.ini', 'MODINFO', 'edain_unchained_version'))
 eu_version_label.grid(row=2, column=0, pady=10, padx=10)
+check_submod_activated()
 
 # button start game
 button_start_game = customtkinter.CTkButton(frame_left, text='Start game', command=start_game)
@@ -599,7 +635,7 @@ button_activate_submod.grid(row=4, column=0, pady=10, padx=20)
 
 # button to test terminal output
 button_terminal_test = customtkinter.CTkButton(frame_left, text='test terminal', command=run)
-button_terminal_test.grid(row=5, column=0, pady=10, padx=20)
+# button_terminal_test.grid(row=5, column=0, pady=10, padx=20)
 
 # label for switch language
 label_switch_language = customtkinter.CTkLabel(frame_left, text='Game language:')
@@ -607,7 +643,7 @@ label_switch_language.grid(row=7, column=0, pady=0, padx=20)
 
 # switch language
 option_switch_language = customtkinter.CTkOptionMenu(frame_left, values=['German', 'English'], command=switch_language)
-option_switch_language.grid(row=8, column=0, pady=10, padx=20)
+option_switch_language.grid(row=8, column=0, pady=0, padx=20)
 option_switch_language.set(read_ini('launcher_options.ini', 'SETTINGS', 'language'))
 
 # label Appearance Mode
@@ -617,8 +653,8 @@ label_appearance_mode.grid(row=9, column=0, pady=0, padx=20)
 # options for Appearance Mode
 option_appearance_mode = customtkinter.CTkOptionMenu(frame_left, values=['Light', 'Dark', 'System'],
                                                      command=change_appearance_mode)
-option_appearance_mode.grid(row=10, column=0, pady=10, padx=20)
-option_appearance_mode.set('System')
+option_appearance_mode.grid(row=10, column=0, pady=0, padx=20)
+option_appearance_mode.set('Dark')
 
 # ============ frame_middle ============
 
@@ -688,21 +724,16 @@ label_update = customtkinter.CTkLabel(frame_update, text='Update to the latest v
 label_update.grid(row=1, column=1, pady=10, padx=20)
 
 # feedback label
-label_feedback = customtkinter.CTkLabel(frame_feedback, width=50, height=2, text_font='BOLD')
+label_feedback = customtkinter.CTkLabel(frame_feedback, text_font='BOLD')
 label_feedback.configure(text='Do something!')
-label_feedback.grid(row=0, column=0, pady=0, padx=15, sticky='ew')
-
-# feedback progressbar
-progressbar = tkinter.ttk.Progressbar(frame_feedback, orient='horizontal', mode='determinate')
-progressbar.grid(row=1, column=0, sticky="ew", padx=15, pady=0)
-
+label_feedback.grid(row=0, column=0, pady=10, padx=15, sticky='ew')
 
 # terminal output as progressbar
-frame = tkinter.Frame(main)
-#frame.pack(expand=True, fill='both')
-frame.grid(row=2, column=0, sticky='ew', padx=15, pady=0)
+frame = customtkinter.CTkFrame(frame_feedback)
+# frame.pack(expand=True, fill='both')
+frame.grid(row=1, column=0, sticky='ew', padx=15, pady=(0, 10))
 
-text = tkinter.Text(frame)
+text = tkinter.Listbox(frame, height=6)
 text.pack(side='left', fill='both', expand=True)
 
 scrollbar = tkinter.Scrollbar(frame)
@@ -711,11 +742,11 @@ scrollbar.pack(side='right', fill='y')
 text['yscrollcommand'] = scrollbar.set
 scrollbar['command'] = text.yview
 
-old_stdout = sys.stdout    
+old_stdout = sys.stdout
 sys.stdout = Redirect(text)
+sys.stderr = Redirect(text)
 
 # loop for main application window
-
 main.mainloop()
 
 # after closing window
