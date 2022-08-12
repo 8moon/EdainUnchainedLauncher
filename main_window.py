@@ -106,6 +106,9 @@ def install_all():
             zip_ref.extractall(edain_unchained_installation_temp)
             zip_ref.close()
             os.remove(file_name)
+
+    # deactivate language
+    check_language('edain_unchained_installation_temp')
     # move override unzipped files from temp folder into target directory
     if os.path.exists(edain_unchained_installation_temp + '/asset.dat'):
         os.replace(edain_unchained_installation_temp + '/asset.dat',
@@ -130,7 +133,7 @@ def install_all():
     # cleanup temp directory afterwards
     if os.path.isdir(edain_unchained_version_temp):
         shutil.rmtree(edain_unchained_version_temp)
-    check_language()
+    check_language('BFMEIIROTWK')
     label_feedback.configure(text='Latest Edain Unchained Version is installed!')
     activate_all_buttons()
 
@@ -235,6 +238,8 @@ def install_files():
             zip_ref.extractall(edain_unchained_installation_temp)
             zip_ref.close()
             os.remove(file_name)
+    # deactivate language
+    check_language('edain_unchained_installation_temp')
     # move override unzipped files from temp folder into target directory
     if os.path.exists(edain_unchained_installation_temp + '/asset.dat'):
         os.replace(edain_unchained_installation_temp + '/asset.dat',
@@ -258,7 +263,7 @@ def install_files():
     # cleanup temp directory afterwards
     if os.path.isdir(edain_unchained_version_temp):
         shutil.rmtree(edain_unchained_version_temp)
-    check_language()
+    check_language('BFMEIIROTWK')
     label_feedback.configure(text='Latest Edain Unchained Version is installed!')
     activate_all_buttons()
 
@@ -442,7 +447,7 @@ def activate_submod():
                     print('File ' + filename + '.bak renamed: ' + filename)
 
             write_ini('launcher_options.ini', 'SETTINGS', 'activated', 'True')
-            check_language()
+            check_language('BFMEIIROTWK')
             label_feedback.configure(text='Submod is activated!')
             check_submod_activated()
         except OSError:
@@ -540,14 +545,21 @@ def switch_language(language):
         write_ini('launcher_options.ini', 'SETTINGS', 'language', 'German')
     else:
         write_ini('launcher_options.ini', 'SETTINGS', 'language', 'English')
-    check_language()
+    check_language('BFMEIIROTWK')
 
 
 # check current language and deactivate (rename) files
-def check_language():
+def check_language(location):
     current_language = read_ini('launcher_options.ini', 'SETTINGS', 'language')
-    path_german_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_ger')
-    path_english_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_eng')
+    path_german_file = ''
+    path_english_file = ''
+    if location == 'BFMEIIROTWK':
+        path_german_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_ger')
+        path_english_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_eng')
+
+    if location == 'edain_unchained_installation_temp' and os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/edain_unchained_installation_temp'):
+        path_german_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/edain_unchained_installation_temp/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_ger')
+        path_english_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/edain_unchained_installation_temp/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_eng')
 
     if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
         if current_language == 'German':
@@ -578,6 +590,8 @@ def check_submod_activated():
     else:
         eu_label.configure(text='Edain Mod')
         eu_version_label.configure(text='')
+
+
 # --------------------------#
 # main window with buttons #
 # --------------------------#
