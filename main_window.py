@@ -8,6 +8,7 @@ import threading
 import time
 import tkinter
 import tkinter.ttk
+import webbrowser
 import zipfile
 from tkinter import filedialog, messagebox
 
@@ -592,17 +593,40 @@ def check_submod_activated():
         eu_version_label.configure(text='')
 
 
+# functions for opening web-link
+def open_link_discord():
+    webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'discord'))
+
+
+def open_link_youtube():
+    webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'youtube'))
+
+
+def open_link_patchnotes():
+    if read_ini('launcher_options.ini', 'SETTINGS', 'language') == 'English':
+        webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'patchnotes_eng'))
+    else:
+        webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'patchnotes_ger'))
+
+
+def open_link_factionplan_harad():
+    if read_ini('launcher_options.ini', 'SETTINGS', 'language') == 'English':
+        webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'factionplan_harad_eng'))
+    else:
+        webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'factionplan_harad_ger'))
+
+
 # --------------------------#
 # main window with buttons #
 # --------------------------#
 
 # main application window
 main = customtkinter.CTk()
-main.geometry('800x520')
+main.geometry('980x520')
 main.title('Edain Unchained Launcher')
 main.iconbitmap('launcherIcon.ico')
-#photo = tkinter.PhotoImage(file='launcherIcon.png')
-#main.iconphoto(False, photo)
+# photo = tkinter.PhotoImage(file='launcherIcon.png')
+# main.iconphoto(False, photo)
 
 # ============ create two frames ============
 
@@ -615,6 +639,32 @@ frame_left.grid(row=0, column=0, sticky='nswe')
 
 frame_middle = customtkinter.CTkFrame(master=main)
 frame_middle.grid(row=0, column=1, sticky='nswe', padx=20, pady=20)
+
+frame_right = customtkinter.CTkFrame(master=main, width=180, corner_radius=0)
+frame_right.grid(row=0, column=2, sticky='nswe')
+
+# ============ frame_right ============
+
+# configure grid layout (1x11)
+frame_right.grid_rowconfigure(0, minsize=10)  # empty row with minsize as spacing (top)
+frame_right.grid_rowconfigure(4, minsize=20)  # empty row with minsize as spacing (middle)
+frame_right.grid_rowconfigure(11, minsize=10)  # empty row with minsize as spacing (bottom)
+
+# button discord-link
+button_link_discord = customtkinter.CTkButton(frame_right, text='Discord', command=open_link_discord)
+button_link_discord.grid(row=2, column=0, pady=10, padx=20)
+
+# button youtube-link
+button_link_youtube = customtkinter.CTkButton(frame_right, text='Youtube', command=open_link_youtube)
+button_link_youtube.grid(row=3, column=0, pady=10, padx=20)
+
+# button patchnotes-link
+button_link_patchnotes = customtkinter.CTkButton(frame_right, text='Patchnotes', command=open_link_patchnotes)
+button_link_patchnotes.grid(row=5, column=0, pady=10, padx=20)
+
+# button factionplan_harad-link
+button_link_factionplan_harad = customtkinter.CTkButton(frame_right, text='Factionplan Harad', command=open_link_factionplan_harad)
+button_link_factionplan_harad.grid(row=6, column=0, pady=10, padx=20)
 
 # ============ frame_left ============
 
