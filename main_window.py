@@ -120,6 +120,11 @@ def install_all():
     for item in os.listdir(edain_unchained_installation_temp):
         extracted_file_name = edain_unchained_installation_temp + '/' + item
         os.replace(extracted_file_name, read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + item)
+        if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + item + '.bak'):
+            os.remove(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + item + '.bak')
+            print('Old file removed: ' + item)
+    # activate submod
+    write_ini('launcher_options.ini', 'SETTINGS', 'activated', 'True')
     # cleanup temp directory afterwards
     if os.path.isdir(edain_unchained_installation_temp):
         shutil.rmtree(edain_unchained_installation_temp)
@@ -135,6 +140,7 @@ def install_all():
     if os.path.isdir(edain_unchained_version_temp):
         shutil.rmtree(edain_unchained_version_temp)
     check_language('BFMEIIROTWK')
+    check_submod_activated()
     label_feedback.configure(text='Latest Edain Unchained Version is installed!')
     activate_all_buttons()
 
@@ -272,21 +278,21 @@ def install_files():
 # function for starting threats for installing / updating
 def start_install_thread(button):
     if check_game_paths():
-        if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
-            # reinstall everything
-            if button.cget('text') == 'Repair':
-                approve_installation_repair = tkinter.messagebox.askyesno(title='Repair Submod',
+        # reinstall everything
+        if button.cget('text') == 'Repair':
+            approve_installation_repair = tkinter.messagebox.askyesno(title='Repair Submod',
                                                                     message='Do you want to download and install all submod files again?')
-                if approve_installation_repair:
-                    threading.Thread(target=install_all).start()
-            # update only new files
-            if button.cget('text') == 'Update':
+            if approve_installation_repair:
+                threading.Thread(target=install_all).start()
+        # update only new files
+        if button.cget('text') == 'Update':
+            if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
                 approve_installation_update = tkinter.messagebox.askyesno(title='Update Submod',
                                                                     message='Do you want to update the submod?')
                 if approve_installation_update:
                     threading.Thread(target=install_files).start()
-        else:
-            tkinter.messagebox.showerror(title='Submod deactivated', message='Activate submod before updating')
+            else:
+                tkinter.messagebox.showerror(title='Submod deactivated', message='Activate submod before updating!!!')
 
 
 # function from install_files for showing the download progress
@@ -312,7 +318,7 @@ def download_files_progressbar():
 def deactivate_all_buttons():
     button_start_game['state'] = 'disabled'
     button_activate_submod['state'] = 'disabled'
-    button_deactivate_submod['state'] = "disabled"
+    button_deactivate_submod['state'] = 'disabled'
     install_edain_unchained['state'] = 'disabled'
     check_for_updates['state'] = 'disabled'
     option_switch_language['state'] = 'disabled'
@@ -382,14 +388,19 @@ def write_ini(filepath, section, subsection, update_text):
 
 
 # function for starting the game
-def start_game():
-    try:
+def start_game_thread():
+    if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '\lotrbfme2ep1.exe'):
         label_feedback.configure(text='DESTROY YOUR ENEMY!')
-        os.chdir(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
-        os.system('lotrbfme2ep1.exe')
+        threading.Thread(target=start_game).start()
         close_window()
-    except OSError:
+    else:
         label_feedback.configure(text='No lotrbfme2ep1.exe found!')
+        print('Starting Application does not exist: ' + read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '\lotrbfme2ep1.exe')
+
+
+def start_game():
+    os.chdir(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
+    os.system('lotrbfme2ep1.exe')
 
 
 # function for deactivating the submod
@@ -421,16 +432,19 @@ def deactivate_submod():
             if file_number == file_exists:
                 label_feedback.configure(text='Submod is already deactivated!')
             else:
-                message = 'Files are missing: '
+                message = ''
                 for (file, filename) in config.items('FILENAME'):
-                    if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak'):
-                        os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak',
-                                  read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename)
-                    elif os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename) is False:
+                    if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename):
+                        os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename,
+                                  read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak')
+                    elif os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename) is False and os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak') is False:
                         message = message + '\n' + filename
 
-                label_feedback.configure(text='Something went wrong!')
-                tkinter.messagebox.showerror(title='Deactivate submod', message=message)
+                write_ini('launcher_options.ini', 'SETTINGS', 'activated', 'False')
+                label_feedback.configure(text='Submod is deactivated!')
+                check_submod_activated()
+                print('Repair submod! Files are missing: ')
+                print(message)
 
 
 # function for activating the submod
@@ -463,13 +477,18 @@ def activate_submod():
             if file_number == file_exists:
                 label_feedback.configure(text='Submod is already activated!')
             else:
-                message = 'Files are missing: '
+                message = 'Please repair the submod! \n\n Files are missing: '
                 for (file, filename) in config.items('FILENAME'):
+                    # find out which files are missing
                     if (os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename) is False):
                         if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak') is False:
                             message = message + '\n' + filename + '.bak'
+                    # deactivate all files again
+                    if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename):
+                        os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename,
+                                  read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak')
 
-                label_feedback.configure(text='Something went wrong!')
+                label_feedback.configure(text='Please repair!')
                 tkinter.messagebox.showerror(title='Activate submod', message=message)
 
 
@@ -685,7 +704,7 @@ eu_version_label.grid(row=2, column=0, pady=10, padx=10)
 check_submod_activated()
 
 # button start game
-button_start_game = customtkinter.CTkButton(frame_left, text='Start game', command=start_game)
+button_start_game = customtkinter.CTkButton(frame_left, text='Start game', command=start_game_thread)
 button_start_game.grid(row=6, column=0, pady=10, padx=20)
 
 # button deactivate submod
