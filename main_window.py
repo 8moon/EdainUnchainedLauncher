@@ -230,7 +230,6 @@ def install_files():
         # local_file_version = read_ini('launcher_options.ini', 'FILEVERSION', file)
         print('Filesize: ' + str(file) + '\n -> Installed: ' + str(local_file_version) + '\n -> Newest: ' + str(newest_file_version))
 
-
         if str(local_file_version) != str(newest_file_version) or file_not_exists:
             file_url = check_newest_version('FILEURL', file)
             edain_unchained_installation_temp = read_ini('launcher_options.ini', 'GAMEPATH',
