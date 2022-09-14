@@ -195,27 +195,43 @@ def install_files():
 
     for (file, filename) in config.items('FILEVERSION'):
         newest_file_version = check_newest_version('FILEVERSION', file)
-        local_file_version = read_ini('launcher_options.ini', 'FILEVERSION', file)
-        print('Version ' + file + ' -> Installed: ' + local_file_version + ' -> Newest: ' + newest_file_version)
 
         file_not_exists = True
         if file == 'eu_asset':
             if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII') + '/asset.dat'):
+                local_file_version = os.path.getsize(
+                    read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII') + '/asset.dat')
                 file_not_exists = False
             else:
                 print('File does not exist: asset.dat')
         elif file == 'eu_lang':
             if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/lang/englishpatch201.big'):
+                local_file_version = os.path.getsize(
+                    read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/lang/englishpatch201.big')
                 file_not_exists = False
             else:
                 print('File does not exist: englishpatch201.big')
         else:
             if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini('launcher_options.ini', 'FILENAME', file)) or os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini('launcher_options.ini', 'FILENAME', file) + '.bak'):
+                if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini(
+                        'launcher_options.ini', 'FILENAME', file)):
+                    local_file_version = os.path.getsize(
+                        read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini(
+                            'launcher_options.ini', 'FILENAME', file))
+                elif os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini(
+                        'launcher_options.ini', 'FILENAME', file) + '.bak'):
+                    local_file_version = os.path.getsize(
+                        read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + read_ini(
+                            'launcher_options.ini', 'FILENAME', file) + '.bak')
                 file_not_exists = False
             else:
                 print('File does not exist: ' + read_ini('launcher_options.ini', 'FILENAME', file))
 
-        if local_file_version != newest_file_version or file_not_exists:
+        # local_file_version = read_ini('launcher_options.ini', 'FILEVERSION', file)
+        print('Filesize: ' + str(file) + '\n -> Installed: ' + str(local_file_version) + '\n -> Newest: ' + str(newest_file_version))
+
+
+        if str(local_file_version) != str(newest_file_version) or file_not_exists:
             file_url = check_newest_version('FILEURL', file)
             edain_unchained_installation_temp = read_ini('launcher_options.ini', 'GAMEPATH',
                                                          'BFMEIIROTWK') + '/edain_unchained_installation_temp/' + file + '.zip'
@@ -816,7 +832,7 @@ frame = customtkinter.CTkFrame(frame_feedback)
 # frame.pack(expand=True, fill='both')
 frame.grid(row=1, column=0, sticky='ew', padx=15, pady=(0, 10))
 
-text = tkinter.Listbox(frame, height=6)
+text = tkinter.Listbox(frame, height=6, selectmode='multiple')
 text.pack(side='left', fill='both', expand=True)
 
 scrollbar = tkinter.Scrollbar(frame)
@@ -826,8 +842,8 @@ text['yscrollcommand'] = scrollbar.set
 scrollbar['command'] = text.yview
 
 old_stdout = sys.stdout
-sys.stdout = Redirect(text)
-sys.stderr = Redirect(text)
+#sys.stdout = Redirect(text)
+#sys.stderr = Redirect(text)
 
 # loop for main application window
 main.mainloop()
