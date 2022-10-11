@@ -1,4 +1,5 @@
 import configparser
+import errno
 import os
 import os.path
 import shutil
@@ -9,6 +10,7 @@ import time
 import tkinter
 import tkinter.ttk
 import webbrowser
+import winreg
 import zipfile
 from tkinter import filedialog, messagebox
 
@@ -18,6 +20,7 @@ import gdown
 # ------------------#
 # global variables #
 # ------------------#
+from PIL import ImageTk, Image
 
 isDownloading = False
 fileDownloading = ''
@@ -36,10 +39,10 @@ def close_window():
 def open_directory(button):
     directory_path = filedialog.askdirectory()
     # write directory path into launcher_options.ini
-    if button.cget('text') == 'browse_path_bfmeii':
+    if button.cget('text') == 'Browse BFME2 path':
         write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII', directory_path)
         bfmeII_path_label.set(directory_path)
-    elif button.cget('text') == 'browse_path_bfmeiirotwk':
+    elif button.cget('text') == 'Browse ROTWK path':
         write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', directory_path)
         bfmeIIrotwk_path_label.set(directory_path)
 
@@ -159,10 +162,8 @@ def download_all_progressbar():
 
 # function for updating edain unchained with source from download repository
 # asset.dat goes into bfmeii folder location
-# _____________harad_sounds.big goes into bfmeiirotwk folder
-# ______________Edain_Unchained.big goes into bfmeiirotwk folder
-# ___________________harad_art.big goes into bfmeiirotwk folder
 # englishpatch201.big goes into bfmeiirotwk/lang
+# all other files go into bfmeiirotwk folder
 def install_files():
     deactivate_all_buttons()
     label_feedback.configure(text='Checking for updates ...')
@@ -195,6 +196,7 @@ def install_files():
 
     for (file, filename) in config.items('FILEVERSION'):
         newest_file_version = check_newest_version('FILEVERSION', file)
+        local_file_version = '0'
 
         file_not_exists = True
         if file == 'eu_asset':
@@ -298,14 +300,14 @@ def start_install_thread(button):
             approve_installation_repair = tkinter.messagebox.askyesno(title='Repair Submod',
                                                                     message='Do you want to download and install all submod files again?')
             if approve_installation_repair:
-                threading.Thread(target=install_all).start()
+                threading.Thread(target=install_all, daemon=True).start()
         # update only new files
         if button.cget('text') == 'Update':
             if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
                 approve_installation_update = tkinter.messagebox.askyesno(title='Update Submod',
                                                                     message='Do you want to update the submod?')
                 if approve_installation_update:
-                    threading.Thread(target=install_files).start()
+                    threading.Thread(target=install_files, daemon=True).start()
             else:
                 tkinter.messagebox.showerror(title='Submod deactivated', message='Activate submod before updating!!!')
 
@@ -406,7 +408,7 @@ def write_ini(filepath, section, subsection, update_text):
 def start_game_thread():
     if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '\lotrbfme2ep1.exe'):
         label_feedback.configure(text='DESTROY YOUR ENEMY!')
-        threading.Thread(target=start_game).start()
+        threading.Thread(target=start_game, daemon=True).start()
         close_window()
     else:
         label_feedback.configure(text='No lotrbfme2ep1.exe found!')
@@ -596,6 +598,20 @@ def check_language(location):
         path_german_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/edain_unchained_installation_temp/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_ger')
         path_english_file = read_ini('launcher_options.ini', 'GAMEPATH', 'bfmeiirotwk') + '/edain_unchained_installation_temp/' + read_ini('launcher_options.ini', 'FILENAME', 'eu_sounds_eng')
 
+    # check if files exist double (activated and deactivated)
+    if os.path.exists(path_german_file) and os.path.exists(path_german_file + '.bak'):
+        if current_language == 'German':
+            os.remove(path_german_file + '.bak')
+        else:
+            os.remove(path_german_file)
+
+    if os.path.exists(path_english_file) and os.path.exists(path_english_file + '.bak'):
+        if current_language == 'English':
+            os.remove(path_english_file + '.bak')
+        else:
+            os.remove(path_english_file)
+
+    # check if submod is activated and deactive files
     if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
         if current_language == 'German':
             if os.path.exists(path_english_file):
@@ -650,6 +666,105 @@ def open_link_factionplan_harad():
         webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'factionplan_harad_ger'))
 
 
+#read the gamepaths from registry
+def registry_read_paths():
+    if read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII') == '':
+        with winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE) as hkey:
+            with winreg.OpenKey(hkey,
+                                "SOFTWARE\WOW6432Node\Electronic Arts\Electronic Arts\The Battle for Middle-earth II",
+                                0, winreg.KEY_READ) as sub_key:
+                if winreg.EnumValue(sub_key, 1)[0] == "InstallPath":
+                    bfme2_path_value = winreg.EnumValue(sub_key, 1)[1]
+                    write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII', bfme2_path_value)
+
+    if read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') == '':
+        with winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE) as hkey:
+            with winreg.OpenKey(hkey,
+                                "SOFTWARE\WOW6432Node\Electronic Arts\Electronic Arts\The Lord of the Rings, The Rise of the Witch-king",
+                                0, winreg.KEY_READ) as sub_key:
+                if winreg.EnumValue(sub_key, 1)[0] == "InstallPath":
+                    rotwk_path_value = winreg.EnumValue(sub_key, 1)[1]
+                    write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', rotwk_path_value)
+
+
+def bfmeii_path_reset():
+    write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII', '')
+    registry_read_paths()
+    bfmeII_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII'))
+
+
+def bfmeiirowtk_path_reset():
+    write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', '')
+    registry_read_paths()
+    bfmeIIrotwk_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
+
+
+#open new window for the settings
+def create_toplevel():
+    global bfmeII_path_label
+    global bfmeIIrotwk_path_label
+    window_options = customtkinter.CTkToplevel()
+    window_options.title('Options')
+    window_options.geometry("800x200")
+
+    # label select your BFME II path
+    bfmeii_select_label = tkinter.StringVar()
+    select_bfmeii_path = customtkinter.CTkLabel(window_options, textvariable=bfmeii_select_label, height=1,)
+    bfmeii_select_label.set('Select your custom installation path: BFME 2')
+    select_bfmeii_path.grid(row=0, column=0, pady=10, padx=20, )
+
+    # button browse path for BFME II
+    browse_path_bfmeii = tkinter.Button(window_options, text='Browse BFME2 path', width=15, height=1, )
+    browse_path_bfmeii.configure(command=lambda button=browse_path_bfmeii: open_directory(button))
+    browse_path_bfmeii.grid(row=1, column=0, pady=10, padx=20)
+
+    # button reset BFME II path
+    reset_bfmeii_path = tkinter.Button(window_options, text='Reset', width=10, height=1, command=bfmeii_path_reset)
+    reset_bfmeii_path.grid(row=1, column=1, pady=10, padx=20)
+
+    # label for bfmeii current path
+    bfmeII_path_label = tkinter.StringVar()
+    label_bfmeii = customtkinter.CTkLabel(window_options, textvariable=bfmeII_path_label, height=1, )
+    bfmeII_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII'))
+    label_bfmeii.grid(row=1, column=2, pady=10, padx=20, )
+
+    # label select your BFME II ROTWK path
+    bfmeiirotwk_select_label = tkinter.StringVar()
+    select_bfmeiirotwk_path = customtkinter.CTkLabel(window_options, textvariable=bfmeiirotwk_select_label, height=1, )
+    bfmeiirotwk_select_label.set('Select your custom installation path: BFME 2')
+    select_bfmeiirotwk_path.grid(row=2, column=0, pady=10, padx=20, )
+
+    # button browse path for BFME II ROTWK
+    browse_path_bfmeiirotwk = tkinter.Button(window_options, text='Browse ROTWK path', width=15, height=1, )
+    browse_path_bfmeiirotwk.configure(command=lambda button=browse_path_bfmeiirotwk: open_directory(button))
+    browse_path_bfmeiirotwk.grid(row=3, column=0, pady=10, padx=20)
+
+    # button reset BFME II ROTWK path
+    reset_bfmeiirowtk_path = tkinter.Button(window_options, text='Reset', width=10, height=1, command=bfmeiirowtk_path_reset)
+    reset_bfmeiirowtk_path.grid(row=3, column=1, pady=10, padx=20)
+
+    # label for bfmeiirotwk current path
+    bfmeIIrotwk_path_label = tkinter.StringVar()
+    label_bfmeiirotwk = customtkinter.CTkLabel(window_options, textvariable=bfmeIIrotwk_path_label, height=1, )
+    bfmeIIrotwk_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
+    label_bfmeiirotwk.grid(row=3, column=2, pady=10, padx=20)
+
+
+def console_output():
+
+    print("switch toggled, current value:", switch_var.get())
+    switch_val = switch_var.get()
+
+    if switch_val == "Show":
+        main.geometry('1280x920')
+        text.configure(height=40)
+        frame.grid(row=2, column=0, sticky='ew', padx=15, pady=(0, 10))
+
+    if switch_val == "Hide":
+        main.geometry('980x520')
+        frame.grid_forget()
+
+
 # --------------------------#
 # main window with buttons #
 # --------------------------#
@@ -682,6 +797,7 @@ frame_right.grid(row=0, column=2, sticky='nswe')
 # configure grid layout (1x11)
 frame_right.grid_rowconfigure(0, minsize=10)  # empty row with minsize as spacing (top)
 frame_right.grid_rowconfigure(4, minsize=20)  # empty row with minsize as spacing (middle)
+frame_right.grid_rowconfigure(9, weight=1)  # empty row as spacing (Options is at bottom)
 frame_right.grid_rowconfigure(11, minsize=10)  # empty row with minsize as spacing (bottom)
 
 # button discord-link
@@ -699,6 +815,10 @@ button_link_patchnotes.grid(row=5, column=0, pady=10, padx=20)
 # button factionplan_harad-link
 button_link_factionplan_harad = customtkinter.CTkButton(frame_right, text='Factionplan Harad', command=open_link_factionplan_harad)
 button_link_factionplan_harad.grid(row=6, column=0, pady=10, padx=20)
+
+# button open new Options window
+button_open_options = customtkinter.CTkButton(frame_right, text='Options', command=create_toplevel)
+button_open_options.grid(row=10, column=0, pady=10, padx=20)
 
 # ============ frame_left ============
 
@@ -744,30 +864,12 @@ option_switch_language = customtkinter.CTkOptionMenu(frame_left, values=['German
 option_switch_language.grid(row=8, column=0, pady=0, padx=20)
 option_switch_language.set(read_ini('launcher_options.ini', 'SETTINGS', 'language'))
 
-# label Appearance Mode
-label_appearance_mode = customtkinter.CTkLabel(frame_left, text='Appearance Mode:')
-label_appearance_mode.grid(row=9, column=0, pady=0, padx=20)
-
-# options for Appearance Mode
-option_appearance_mode = customtkinter.CTkOptionMenu(frame_left, values=['Light', 'Dark', 'System'],
-                                                     command=change_appearance_mode)
-option_appearance_mode.grid(row=10, column=0, pady=0, padx=20)
-option_appearance_mode.set('Dark')
-
 # ============ frame_middle ============
 
 # configure grid layout (1x7)
-frame_middle.rowconfigure(1, weight=1)
 frame_middle.rowconfigure(3, weight=1)
 frame_middle.rowconfigure(5, weight=1)
 frame_middle.columnconfigure(0, weight=1)
-
-frame_gamepath = customtkinter.CTkFrame(master=frame_middle)
-frame_gamepath.grid(row=1, column=0, columnspan=2, rowspan=2, pady=20, padx=20, sticky='nsew')
-frame_gamepath.grid_rowconfigure(0, weight=1)
-frame_gamepath.grid_rowconfigure(1, weight=1)
-frame_gamepath.grid_columnconfigure(0, weight=1)
-frame_gamepath.grid_columnconfigure(1, weight=1)
 
 frame_update = customtkinter.CTkFrame(master=frame_middle)
 frame_update.grid(row=3, column=0, columnspan=2, rowspan=2, pady=20, padx=20, sticky='nsew')
@@ -781,41 +883,19 @@ frame_feedback.grid_rowconfigure(0, weight=1)
 frame_feedback.grid_rowconfigure(1, weight=1)
 frame_feedback.grid_columnconfigure(0, weight=1)
 
-# button browse path for BFME II
-browse_path_bfmeii = tkinter.Button(frame_gamepath, text='browse_path_bfmeii', width=25, height=1, )
-browse_path_bfmeii.configure(command=lambda button=browse_path_bfmeii: open_directory(button))
-browse_path_bfmeii.grid(row=0, column=0, pady=10, padx=20)
-
-# label for bfmeii current path
-bfmeII_path_label = tkinter.StringVar()
-label_bfmeii = customtkinter.CTkLabel(frame_gamepath, textvariable=bfmeII_path_label, height=1, )
-bfmeII_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII'))
-label_bfmeii.grid(row=0, column=1, pady=10, padx=20, )
-
-# button browse path for BFME II ROTWK
-browse_path_bfmeiirotwk = tkinter.Button(frame_gamepath, text='browse_path_bfmeiirotwk', width=25, height=1, )
-browse_path_bfmeiirotwk.configure(command=lambda button=browse_path_bfmeiirotwk: open_directory(button))
-browse_path_bfmeiirotwk.grid(row=1, column=0, pady=10, padx=20)
-
-# label for bfmeiirotwk current path
-bfmeIIrotwk_path_label = tkinter.StringVar()
-label_bfmeiirotwk = customtkinter.CTkLabel(frame_gamepath, textvariable=bfmeIIrotwk_path_label, height=1, )
-bfmeIIrotwk_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
-label_bfmeiirotwk.grid(row=1, column=1, pady=10, padx=20)
-
 # button install edain unchained submod
-install_edain_unchained = tkinter.Button(frame_update, text='Repair', width=20, height=1)
+install_edain_unchained = tkinter.Button(frame_update, text='Repair', width=20, height=2)
 install_edain_unchained.configure(command=lambda button=install_edain_unchained: start_install_thread(button))
-install_edain_unchained.grid(row=0, column=0, pady=10, padx=20)
+install_edain_unchained.grid(row=0, column=0, pady=0, padx=20)
 
 # label install
 install_edain_unchained_label = customtkinter.CTkLabel(frame_update, text='Reinstall the mod')
 install_edain_unchained_label.grid(row=0, column=1, pady=10, padx=20)
 
 # button check for updates
-check_for_updates = tkinter.Button(frame_update, text='Update', width=20, height=1)
+check_for_updates = tkinter.Button(frame_update, text='Update', width=20, height=2)
 check_for_updates.configure(command=lambda button=check_for_updates: start_install_thread(button))
-check_for_updates.grid(row=1, column=0, pady=10, padx=20)
+check_for_updates.grid(row=1, column=0, pady=0, padx=20)
 
 # label update
 label_update = customtkinter.CTkLabel(frame_update, text='Update to the latest version')
@@ -824,25 +904,30 @@ label_update.grid(row=1, column=1, pady=10, padx=20)
 # feedback label
 label_feedback = customtkinter.CTkLabel(frame_feedback, text_font='BOLD')
 label_feedback.configure(text='Do something!')
-label_feedback.grid(row=0, column=0, pady=10, padx=15, sticky='ew')
+label_feedback.grid(row=0, column=0, pady=0, padx=15, sticky='ew')
 
 # terminal output as progressbar
+global frame
 frame = customtkinter.CTkFrame(frame_feedback)
 # frame.pack(expand=True, fill='both')
-frame.grid(row=1, column=0, sticky='ew', padx=15, pady=(0, 10))
-
+global text
 text = tkinter.Listbox(frame, height=6, selectmode='multiple')
 text.pack(side='left', fill='both', expand=True)
 
+switch_var = customtkinter.StringVar(value="Hide")
+console_switch = customtkinter.CTkSwitch(frame_feedback, text="Console", command=console_output,variable=switch_var, onvalue="Show", offvalue="Hide")
+console_switch.grid(row=1, column=0)
+
+registry_read_paths()
+
 scrollbar = tkinter.Scrollbar(frame)
 scrollbar.pack(side='right', fill='y')
-
 text['yscrollcommand'] = scrollbar.set
 scrollbar['command'] = text.yview
 
 old_stdout = sys.stdout
-#sys.stdout = Redirect(text)
-#sys.stderr = Redirect(text)
+sys.stdout = Redirect(text)
+sys.stderr = Redirect(text)
 
 # loop for main application window
 main.mainloop()
