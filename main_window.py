@@ -1,5 +1,5 @@
 import configparser
-import errno
+import glob
 import os
 import os.path
 import shutil
@@ -20,7 +20,6 @@ import gdown
 # ------------------#
 # global variables #
 # ------------------#
-from PIL import ImageTk, Image
 
 isDownloading = False
 fileDownloading = ''
@@ -45,6 +44,7 @@ def open_directory(button):
     elif button.cget('text') == 'Browse ROTWK path':
         write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', directory_path)
         bfmeIIrotwk_path_label.set(directory_path)
+    is_installed()
 
 
 # function for installing edain unchained with source from download repository
@@ -300,16 +300,15 @@ def start_install_thread(button):
             approve_installation_repair = tkinter.messagebox.askyesno(title='Repair Submod',
                                                                     message='Do you want to download and install all submod files again?')
             if approve_installation_repair:
+                deinstall_submod()
                 threading.Thread(target=install_all, daemon=True).start()
         # update only new files
-        if button.cget('text') == 'Update':
-            if read_ini('launcher_options.ini', 'SETTINGS', 'activated') == 'True':
-                approve_installation_update = tkinter.messagebox.askyesno(title='Update Submod',
-                                                                    message='Do you want to update the submod?')
-                if approve_installation_update:
-                    threading.Thread(target=install_files, daemon=True).start()
-            else:
-                tkinter.messagebox.showerror(title='Submod deactivated', message='Activate submod before updating!!!')
+        if button.cget('text') == 'Update' or button.cget('text') == 'Install':
+            approve_installation_update = tkinter.messagebox.askyesno(title='Update Submod',
+                                                                message='Do you want to update the submod?')
+            activate_existing_files()
+            if approve_installation_update:
+                threading.Thread(target=install_files, daemon=True).start()
 
 
 # function from install_files for showing the download progress
@@ -483,30 +482,36 @@ def activate_submod():
             label_feedback.configure(text='Submod is activated!')
             check_submod_activated()
         except OSError:
-            file_number = 1
-            file_exists = 1
-            config = configparser.ConfigParser()
-            config.read('launcher_options.ini')
-            for (file, filename) in config.items('FILENAME'):
-                file_number += 1
-                if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename):
-                    file_exists += 1
-            if file_number == file_exists:
-                label_feedback.configure(text='Submod is already activated!')
-            else:
-                message = 'Please repair the submod! \n\n Files are missing: '
-                for (file, filename) in config.items('FILENAME'):
-                    # find out which files are missing
-                    if (os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename) is False):
-                        if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak') is False:
-                            message = message + '\n' + filename + '.bak'
-                    # deactivate all files again
-                    if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename):
-                        os.rename(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename,
-                                  read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak')
+            activate_existing_files()
+            tkinter.messagebox.showwarning(title='Warning', message='Please repair the submod! \n\n Some files are missing!')
 
-                label_feedback.configure(text='Please repair!')
-                tkinter.messagebox.showerror(title='Activate submod', message=message)
+
+# activate all existing files
+def activate_existing_files():
+    file_number = 1
+    file_exists = 1
+    config = configparser.ConfigParser()
+    config.read('launcher_options.ini')
+    for (file, filename) in config.items('FILENAME'):
+        file_number += 1
+        if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename):
+            file_exists += 1
+    if file_number == file_exists:
+        label_feedback.configure(text='Submod is already activated!')
+    else:
+        message = 'Files are missing: '
+        for (file, filename) in config.items('FILENAME'):
+            # find out which files are missing
+            if not (os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename)):
+                if os.path.exists(
+                        read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak'):
+                    os.rename(
+                        read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename + '.bak',
+                        read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/' + filename)
+                    print('File ' + filename + '.bak renamed: ' + filename)
+                else:
+                    message = message + '\n' + filename + '.bak'
+        label_feedback.configure(message)
 
 
 def check_game_paths():
@@ -666,7 +671,7 @@ def open_link_factionplan_harad():
         webbrowser.open_new_tab(read_ini('launcher_options.ini', 'LINKS', 'factionplan_harad_ger'))
 
 
-#read the gamepaths from registry
+# read the gamepaths from registry
 def registry_read_paths():
     if read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII') == '':
         with winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE) as hkey:
@@ -691,21 +696,48 @@ def bfmeii_path_reset():
     write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII', '')
     registry_read_paths()
     bfmeII_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEII'))
+    is_installed()
 
 
 def bfmeiirowtk_path_reset():
     write_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK', '')
     registry_read_paths()
     bfmeIIrotwk_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
+    is_installed()
 
 
-#open new window for the settings
+# check if submod is already installed and change label
+def is_installed():
+    if os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK')
+                          + '/' + read_ini('launcher_options.ini', 'FILENAME', 'EU_DATA')) \
+                          or os.path.exists(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK')
+                          + '/' + read_ini('launcher_options.ini', 'FILENAME', 'EU_DATA') + '.bak'):
+        check_for_updates.configure(text='Update')
+    else:
+        check_for_updates.configure(text='Install')
+
+
+# delete submod files
+def deinstall_submod():
+    temp = read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK') + '/*_Edain_Unchained_*'
+    for files in glob.glob(temp):
+        os.remove(files)
+        print('File deleted: ' + files)
+
+    is_installed()
+    write_ini('launcher_options.ini', 'SETTINGS', 'ACTIVATED', 'FALSE')
+    check_submod_activated()
+    label_feedback.configure(text='Submod is deinstalled!')
+    # tkinter.messagebox.showinfo(title='Deinstallation', message='Please check for updated with the Edain Mod Launcher!')
+
+
+# open new window for the settings
 def create_toplevel():
     global bfmeII_path_label
     global bfmeIIrotwk_path_label
     window_options = customtkinter.CTkToplevel()
     window_options.title('Options')
-    window_options.geometry("800x200")
+    window_options.geometry("800x260")
 
     # label select your BFME II path
     bfmeii_select_label = tkinter.StringVar()
@@ -749,7 +781,19 @@ def create_toplevel():
     bfmeIIrotwk_path_label.set(read_ini('launcher_options.ini', 'GAMEPATH', 'BFMEIIROTWK'))
     label_bfmeiirotwk.grid(row=3, column=2, pady=10, padx=20)
 
+    # label select your BFME II ROTWK path
+    deinstall_submod_var = tkinter.StringVar()
+    deinstall_submod_label = customtkinter.CTkLabel(window_options, textvariable=deinstall_submod_var, height=1, )
+    deinstall_submod_var.set('Deinstall all submod files from the current path')
+    deinstall_submod_label.grid(row=4, column=0, pady=10, padx=20, )
 
+    # button deinstall submod
+    deinstall_submod_button = tkinter.Button(window_options, text='Deinstall', width=15, height=1,
+                                            command=deinstall_submod)
+    deinstall_submod_button.grid(row=5, column=0, pady=10, padx=20)
+
+
+# show and hide the console output
 def console_output():
 
     print("switch toggled, current value:", switch_var.get())
@@ -919,6 +963,7 @@ console_switch = customtkinter.CTkSwitch(frame_feedback, text="Console", command
 console_switch.grid(row=1, column=0)
 
 registry_read_paths()
+is_installed()
 
 scrollbar = tkinter.Scrollbar(frame)
 scrollbar.pack(side='right', fill='y')
