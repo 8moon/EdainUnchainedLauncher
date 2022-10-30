@@ -144,6 +144,7 @@ def install_all():
         shutil.rmtree(edain_unchained_version_temp)
     check_language('BFMEIIROTWK')
     check_submod_activated()
+    activate_submod()
     label_feedback.configure(text='Latest Edain Unchained Version is installed!')
     activate_all_buttons()
 
@@ -288,6 +289,7 @@ def install_files():
     if os.path.isdir(edain_unchained_version_temp):
         shutil.rmtree(edain_unchained_version_temp)
     check_language('BFMEIIROTWK')
+    activate_submod()
     label_feedback.configure(text='Latest Edain Unchained Version is installed!')
     activate_all_buttons()
 
